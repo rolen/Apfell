@@ -1312,6 +1312,8 @@ async def callback_query():
         .join(calias, p.JOIN.LEFT_OUTER, on=(Callback.pcallback).alias('pcallback')).switch(Callback)\
         .join(loperator, p.JOIN_LEFT_OUTER, on=(Callback.locked_operator).alias('locked_operator')).switch(Callback)
 
+async def allcommands_query ():
+    return Command.select()
 
 async def loadedcommands_query():
     return LoadedCommands.select(LoadedCommands, Command, Callback, Operator)\

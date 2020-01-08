@@ -117,6 +117,30 @@ async def get_loaded_commands_for_callback(request, id, user):
                                                            'version': lc.version,
                                                            'apfell_version': lc.command.version} for lc in loaded_commands]})
 
+@apfell.route(apfell.config['API_BASE'] + "/callbacks/<id:int>/all_commands", methods=['GET'])
+@inject_user()
+@scoped(['auth:user', 'auth:apitoken_user'], False)  # user or user-level api token are ok
+async def get_all_commands_for_callback(request, id, user):
+    if user['auth'] not in ['access_token', 'apitoken']:
+        abort(status_code=403, message="Cannot access via Cookies. Use CLI or access via JS in browser")
+    try:
+        query = await db_model.operation_query()
+        operation = await db_objects.get(query, name=user['current_operation'])
+        query = await db_model.callback_query()
+        callback = await db_objects.get(query, id=id, operation=operation)
+        query = await db_model.allcommands_query()
+        
+    except Exception as e:
+        print(e)
+        return json({'status': 'error', 'error': 'Failed to get all of the commands'})
+    cmds_query = await db_objects.execute(query.where(Command.payload_type == callback.registered_payload))
+    return json({'status': 'success', 'commands': [{'command': com.cmd,
+                                                    'description': com.description,
+                                                    'needs_admin' : com.needs_admin,
+                                                    'version': com.version,
+                                                    } for com in cmds_query]})
+
+
 
 @apfell.route(apfell.config['API_BASE'] + "/callbacks/<id:int>", methods=['PUT'])
 @inject_user()
